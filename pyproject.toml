@@ -1,11 +1,10 @@
 [project]
 name = "ohdog"
-version = "0.1.7"
+version = "0.1.8"
 description = "Over-engineered static Html DOcument Generator"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "jinja2>=3.1.6",
     "markdown>=3.10.2",
-    "pyyaml>=6.0.3",
 ]
