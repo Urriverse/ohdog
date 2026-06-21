@@ -70,8 +70,8 @@ def parse_and_evaluate_blocks(text, macros, source_file: Path):
         found_block = False
 
         for i, line in enumerate(lines):
-            m_start = re.match(r'^#([a-zA-Z0-9_]+)\s*$', line)
-            m_end = re.match(r'^#/([a-zA-Z0-9_]+)\s*$', line)
+            m_start = re.match(r'^#([a-zA-Z0-9_]+)\b', line)
+            m_end = re.match(r'^#/([a-zA-Z0-9_]+)\b', line)
 
             if m_start:
                 stack.append((m_start.group(1), i))
