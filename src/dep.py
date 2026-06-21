@@ -8,7 +8,7 @@ from log import logger
 
 def resolve_require_name(name):
     if "/" not in name:
-        return f"Urriverse/hsb-{name}"
+        return f"Urriverse/ohdog-{name}"
     return name
 
 def fetch_dep(name, project_path, no_cache=False):
