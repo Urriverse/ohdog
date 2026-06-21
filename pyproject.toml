@@ -1,6 +1,6 @@
 [project]
 name = "ohdog"
-version = "0.1.0"
+version = "0.1.1"
 description = "Over-engineered static Html DOcument Generator"
 readme = "README.md"
 requires-python = ">=3.13"
