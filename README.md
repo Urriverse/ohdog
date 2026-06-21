@@ -43,9 +43,7 @@ Run `ohdog vendor` to fetch and copy their assets/macros.
 Place Python files in `macros/` – each file must define a `macro(content: str) -> str` function.  
 Use them in Markdown like:
 ```
-#mymacro
-content goes here
-#/mymacro
+#[mymacro] content goes here [mymacro]#
 ```
 
 ## Multi‑page Mode

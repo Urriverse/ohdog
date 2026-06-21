@@ -153,9 +153,7 @@ Macros are custom blocks that are replaced with HTML. They are defined in Python
 **Syntax:**
 
 ```markdown
-#macroname
-Content that will be passed to the macro.
-#/macroname
+#[macroname] Content that will be passed to the macro. [macroname]#
 ```
 
 The macro receives the content as a string and must return an HTML string (which is inserted directly into the page, without further Markdown processing).
@@ -195,7 +193,7 @@ Place a `.py` file in the `macros/` directory. Each file must define a function 
 |-------------------|----------------------|-------------|
 | `MACROS`          | `dict[str, Callable]` | All regular macros (by name). Use this to call other macros: `MACROS['other'](content)`. |
 | `DEPS`            | `dict[str, Path]`    | Maps full dependency name (e.g., `"Urriverse/ohdog-theme"`) to its local `Path` (the unpacked base directory). Useful for reading files from a specific dependency. |
-| `MACRO_REGISTRY`  | `dict[tuple[str, str], Callable]` | Maps `(dep_name, macro_name)` → callable. This is the source of truth for all loaded macros. You can inspect or use it directly, but `include_macro` is the recommended way. |
+| `MACRO_REGISTRY`  | `dict[tuple[str, str], Callable]` | Maps `(dep_name, macro_name)` &rarrow; callable. This is the source of truth for all loaded macros. You can inspect or use it directly, but `include_macro` is the recommended way. |
 | `include_macro`   | `Callable[[str, str], Optional[Callable]]` | Built‑in function to retrieve a macro from a specific dependency (or `"__local__"` for project macros). |
 
 **Example:** `macros/greet.py`

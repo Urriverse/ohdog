@@ -60,51 +60,104 @@ def load_macros_from_dir(macros_dir, macros_dict, special_macros_dict, dep_name=
                 macros_dict[macro_name] = callable_func
 
 
+import re
+
 def parse_and_evaluate_blocks(text, macros, source_file: Path):
+    """
+    Replaces inline macro tags `#[name]...[/name]#` with processed HTML.
+    Skips processing inside fenced code blocks (``` ... ```).
+    """
     placeholders = {}
     placeholder_counter = 0
 
-    while True:
-        lines = text.split('\n')
-        stack = []
-        found_block = False
+    # We'll process the text in a single pass, tracking code blocks.
+    # We'll collect all macro start/end matches and decide which to process.
+    pattern = re.compile(
+        r'(#\[([a-zA-Z0-9_]+)\])|(\[([a-zA-Z0-9_]+)\]#)'
+    )
 
-        for i, line in enumerate(lines):
-            m_start = re.match(r'^#([a-zA-Z0-9_]+)\b', line)
-            m_end = re.match(r'^#/([a-zA-Z0-9_]+)\b', line)
+    # Find all matches and their positions
+    matches = list(pattern.finditer(text))
+    if not matches:
+        return text, placeholders
 
-            if m_start:
-                stack.append((m_start.group(1), i))
-            elif m_end:
-                name = m_end.group(1)
-                if stack and stack[-1][0] == name:
-                    _, start_idx = stack.pop()
-                    content = "\n".join(lines[start_idx+1 : i])
+    # Determine which positions are inside fenced code blocks
+    # Scan for triple backticks, toggle a flag.
+    inside_code = False
+    code_ranges = []  # list of (start, end) positions of code blocks
+    i = 0
+    while i < len(text):
+        if text[i:i+3] == '```':
+            if not inside_code:
+                code_start = i
+                inside_code = True
+                i += 3
+            else:
+                # Closing fence
+                code_end = i + 3
+                code_ranges.append((code_start, code_end))
+                inside_code = False
+                i += 3
+        else:
+            i += 1
 
-                    if name in macros:
-                        try:
-                            html_out = macros[name](content)
-                        except Exception as e:
-                            log.log_macro_error(e, name, source_file)
-                    else:
-                        log.warning(
-                            f"unknown macro '{name}'",
-                            file=source_file,
-                            line=start_idx + 1
-                        )
-                        html_out = f"<!-- Unknown macro: {name} -->\n<pre>{content}</pre>"
+    # Helper to check if a position is inside a code block
+    def is_inside_code(pos):
+        for start, end in code_ranges:
+            if start <= pos < end:
+                return True
+        return False
 
-                    ph_id = f"<!-- BLOCK_PH_{placeholder_counter} -->"
-                    placeholder_counter += 1
-                    placeholders[ph_id] = html_out
+    # Now build a list of blocks to process.
+    # We need to match start and end tags, with proper nesting, but skip those inside code.
+    # We'll use a stack.
+    stack = []  # each: (start_idx, tag, content_start)
+    changes = []
 
-                    lines[start_idx : i+1] = [ph_id]
-                    text = "\n".join(lines)
-                    found_block = True
-                    break
+    for m in matches:
+        if m.group(1):  # start tag
+            tag = m.group(2)
+            start_idx = m.start()
+            if is_inside_code(start_idx):
+                # Skip processing this macro
+                continue
+            # Push start info
+            stack.append((start_idx, tag, m.end()))
+        elif m.group(3):  # end tag
+            tag = m.group(4)
+            end_idx = m.end()
+            if is_inside_code(end_idx):
+                # Skip processing this macro
+                continue
+            if stack and stack[-1][1] == tag:
+                start_idx, _, content_start = stack.pop()
+                content = text[content_start:m.start()]
+                # Process macro
+                macro_name = tag
+                if macro_name in macros:
+                    try:
+                        html_out = macros[macro_name](content)
+                    except Exception as e:
+                        log.log_macro_error(e, macro_name, source_file)
+                else:
+                    log.warning(
+                        f"unknown macro '{macro_name}'",
+                        file=source_file,
+                        line=text.count('\n', 0, start_idx) + 1
+                    )
+                    html_out = f"<!-- Unknown macro: {macro_name} -->\n<pre>{content}</pre>"
 
-        if not found_block:
-            break
+                ph_id = f"<!-- BLOCK_PH_{placeholder_counter} -->"
+                placeholder_counter += 1
+                placeholders[ph_id] = html_out
+                changes.append((start_idx, end_idx, ph_id))
+            else:
+                # unmatched end tag – ignore
+                pass
+
+    # Apply changes in reverse order to preserve indices
+    for start, end, ph_id in reversed(changes):
+        text = text[:start] + ph_id + text[end:]
 
     return text, placeholders
 

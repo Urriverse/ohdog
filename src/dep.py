@@ -30,11 +30,11 @@ def fetch_dep(name, project_path, no_cache=False):
     
     logger.info(f"{full_name}")
     try:
-        urllib.request.urlretrieve(zip_url, zip_path, timeout=30)
+        urllib.request.urlretrieve(zip_url, zip_path)
     except urllib.error.HTTPError:
         zip_url = zip_url.replace("/main.zip", "/master.zip")
         try:
-            urllib.request.urlretrieve(zip_url, zip_path, timeout=30)
+            urllib.request.urlretrieve(zip_url, zip_path)
         except Exception as e2:
             logger.error(f"failed to fetch '{full_name}': {e2}")
     except Exception as e:
