@@ -1,3 +1,5 @@
+![embarrassed_dog](docs/src/assets/embarrassed_dog.png)
+
 # Oh, Dog!
 
 **Oh, Dog!** (Over-engineered static Html DOcument Generator) is a lightweight CLI tool
