@@ -162,7 +162,20 @@ The macro receives the content as a string and must return an HTML string (which
 
 #### Built‑in Macros
 
-Oh, Dog! does not ship with built‑in macros. However, you can use dependencies (like `hsb‑theme`) that provide ready‑made macros.
+Oh, Dog! comes with one built‑in macro, **`include_macro`**, which is only available inside other macros (not from Markdown directly). It allows you to retrieve a macro from a **specific** dependency, bypassing the normal priority order. This is useful when several dependencies provide macros with the same name and you need a particular version.
+
+Usage inside a Python macro:
+
+```python
+def macro(content: str) -> str:
+    # Get the "button" macro from the "john/hsb-extras" dependency
+    button = include_macro('john/hsb-extras', 'button')
+    if button is None:
+        return '<p>Button macro not found</p>'
+    return button(content)
+```
+
+You can also use it via the global `MACROS` dictionary: `MACROS['include_macro']('dep', 'name')`. Both forms work because `include_macro` is injected as a global.
 
 #### Special Macros
 
@@ -176,21 +189,35 @@ Macros whose filename starts with an underscore (`_`) are treated as **special m
 
 Place a `.py` file in the `macros/` directory. Each file must define a function named `macro` that accepts a single string (the block content) and returns a string (the HTML).
 
+**Globals available inside every macro module**:
+
+| Name              | Type                 | Description |
+|-------------------|----------------------|-------------|
+| `MACROS`          | `dict[str, Callable]` | All regular macros (by name). Use this to call other macros: `MACROS['other'](content)`. |
+| `DEPS`            | `dict[str, Path]`    | Maps full dependency name (e.g., `"Urriverse/hsb-theme"`) to its local `Path` (the unpacked base directory). Useful for reading files from a specific dependency. |
+| `MACRO_REGISTRY`  | `dict[tuple[str, str], Callable]` | Maps `(dep_name, macro_name)` → callable. This is the source of truth for all loaded macros. You can inspect or use it directly, but `include_macro` is the recommended way. |
+| `include_macro`   | `Callable[[str, str], Optional[Callable]]` | Built‑in function to retrieve a macro from a specific dependency (or `"__local__"` for project macros). |
+
 **Example:** `macros/greet.py`
 ```python
 def macro(content: str) -> str:
     name = content.strip() or "World"
+    # Call another macro if available
+    if 'uppercase' in MACROS:
+        name = MACROS['uppercase'](name)
     return f"<h1>Hello, {name}!</h1>"
 ```
 
-In your Markdown:
-```markdown
-#greet
-Alice
-#/greet
-```
+You can also read a file from a dependency:
 
-Outputs `<h1>Hello, Alice!</h1>`.
+```python
+def macro(content: str) -> str:
+    theme_path = DEPS.get('Urriverse/hsb-theme')
+    if theme_path:
+        readme = (theme_path / "README.md").read_text()
+        return f"<pre>{readme}</pre>"
+    return "<p>Theme not found</p>"
+```
 
 **Error handling:** If a macro raises an exception, the build will stop and display a diagnostic message showing the source file and line number where the macro was invoked.
 
@@ -226,9 +253,9 @@ Vendoring is idempotent: files that already exist are not overwritten unless `--
 
 ### Dependency Resolution & Priority
 
-Dependencies are ordered as they appear in `requires` (and then recursively). When copying assets/macros, **later** dependencies have higher priority. That is, if two dependencies provide the same file (e.g., `style.css`), the one that appears later in the tree will overwrite earlier ones (if `--force` is used, the highest priority always wins).
+Dependencies are ordered as they appear in `requires` (and then recursively). When copying assets/macros, **later** dependencies have higher priority. That is, if two dependencies provide the same file (e.g., `style.css`), the one that appears later in the tree will overwrite earlier ones (if `--force` is used, the highest priority always wins). This allows you to layer themes and customisations.
 
-This allows you to layer themes and customisations.
+However, you can still access macros from **lower‑priority** dependencies using the `include_macro` function, which overrides the priority order.
 
 ---
 
@@ -238,7 +265,7 @@ To generate more than one page, set `mode = "multipage"` in `OhDog.toml`. Then, 
 
 **`preprocess_file`** signature:
 ```python
-def preprocess_file(file_path: Path, macros: dict) -> str:
+def preprocess_file(file_path: Path) -> str:
     ...
 ```
 
@@ -259,11 +286,11 @@ def macro(preprocess_file):
     output = {}
     
     # Process main index
-    index_content = preprocess_file(Path("src/index.md"), {})
+    index_content = preprocess_file(Path("src/index.md"))
     output[Path("index.html")] = index_content
     
     # Process a guide page
-    guide_content = preprocess_file(Path("src/guide.md"), {})
+    guide_content = preprocess_file(Path("src/guide.md"))
     output[Path("guide/index.html")] = guide_content
     
     # Copy an image as bytes
@@ -323,7 +350,7 @@ Open `out/my-docs/index.html`.
 Add to `OhDog.toml`:
 ```toml
 [general]
-requires = ["urriverse-theme"]
+requires = ["urriverse/hsb-theme"]
 ```
 
 Run:
@@ -344,7 +371,7 @@ def macro(preprocess):
     pages = {}
     for md_file in Path("src").glob("*.md"):
         name = md_file.stem
-        html = preprocess(md_file, {})
+        html = preprocess(md_file)
         pages[Path(f"{name}.html")] = html
     # Ensure index exists
     if Path("index.html") not in pages:
@@ -370,9 +397,8 @@ Set `mode = "multipage"` in `OhDog.toml` and run `ohdog build`. Each `.md` file 
 
 ## Contributing
 
-Oh, Dog! is open source. Feel free to report issues or submit pull requests on the [GitHub repository](https://github.com/yourname/ohdog).
+Oh, Dog! is open source. Feel free to report issues or submit pull requests on the [GitHub repository](https://github.com/Urriverse/ohdog).
 
 ---
 
-**Happy documenting!** :embarrassed_dog:
-
+**Happy dogumenting!** 🐶
