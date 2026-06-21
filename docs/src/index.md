@@ -80,7 +80,7 @@ Initializes a new project in the given directory. Creates:
 
 Example:
 ```bash
-ohdog init my-cool-docs --from urriverse/hsb-theme urriverse/hsb-charts
+ohdog init my-cool-docs --from urriverse/ohdog-theme urriverse/ohdog-charts
 ```
 
 ### `ohdog build [path]`
@@ -125,7 +125,7 @@ The configuration file is written in [TOML](https://toml.io). It supports two ma
 title = "My Awesome Docs"
 name = "awesome-docs"
 mode = "multipage"
-requires = ["urriverse/hsb-theme", "john/hsb-extras"]
+requires = ["urriverse/ohdog-theme", "john/ohdog-extras"]
 ```
 
 > **Note:** After running `vendor`, the `requires` list will be emptied. This is intentional: the assets and macros are now part of your project, so you no longer need the remote dependencies.
@@ -168,8 +168,8 @@ Usage inside a Python macro:
 
 ```python
 def macro(content: str) -> str:
-    # Get the "button" macro from the "john/hsb-extras" dependency
-    button = include_macro('john/hsb-extras', 'button')
+    # Get the "button" macro from the "john/ohdog-extras" dependency
+    button = include_macro('john/ohdog-extras', 'button')
     if button is None:
         return '<p>Button macro not found</p>'
     return button(content)
@@ -194,7 +194,7 @@ Place a `.py` file in the `macros/` directory. Each file must define a function 
 | Name              | Type                 | Description |
 |-------------------|----------------------|-------------|
 | `MACROS`          | `dict[str, Callable]` | All regular macros (by name). Use this to call other macros: `MACROS['other'](content)`. |
-| `DEPS`            | `dict[str, Path]`    | Maps full dependency name (e.g., `"Urriverse/hsb-theme"`) to its local `Path` (the unpacked base directory). Useful for reading files from a specific dependency. |
+| `DEPS`            | `dict[str, Path]`    | Maps full dependency name (e.g., `"Urriverse/ohdog-theme"`) to its local `Path` (the unpacked base directory). Useful for reading files from a specific dependency. |
 | `MACRO_REGISTRY`  | `dict[tuple[str, str], Callable]` | Maps `(dep_name, macro_name)` → callable. This is the source of truth for all loaded macros. You can inspect or use it directly, but `include_macro` is the recommended way. |
 | `include_macro`   | `Callable[[str, str], Optional[Callable]]` | Built‑in function to retrieve a macro from a specific dependency (or `"__local__"` for project macros). |
 
@@ -212,7 +212,7 @@ You can also read a file from a dependency:
 
 ```python
 def macro(content: str) -> str:
-    theme_path = DEPS.get('Urriverse/hsb-theme')
+    theme_path = DEPS.get('Urriverse/ohdog-theme')
     if theme_path:
         readme = (theme_path / "README.md").read_text()
         return f"<pre>{readme}</pre>"
@@ -229,13 +229,13 @@ Dependencies are GitHub repositories that provide assets, macros, or even base c
 
 ### Specifying Dependencies
 
-In `OhDog.toml` under `[general].requires`, list repository names in the form `"user/repo"`. You can also use a shorthand: if you write just the repo name (without a slash), it is prefixed with `Urriverse/hsb-` – this is convenient for the official Oh, Dog! ecosystem.
+In `OhDog.toml` under `[general].requires`, list repository names in the form `"user/repo"`. You can also use a shorthand: if you write just the repo name (without a slash), it is prefixed with `Urriverse/ohdog-` – this is convenient for the official Oh, Dog! ecosystem.
 
 Example:
 ```toml
 [general]
-requires = ["urriverse/hsb-theme", "charts"]
-# charts expands to "Urriverse/hsb-charts"
+requires = ["urriverse/ohdog-theme", "charts"]
+# charts expands to "Urriverse/ohdog-charts"
 ```
 
 ### The `vendor` Command
@@ -350,7 +350,7 @@ Open `out/my-docs/index.html`.
 Add to `OhDog.toml`:
 ```toml
 [general]
-requires = ["urriverse/hsb-theme"]
+requires = ["urriverse/ohdog-theme"]
 ```
 
 Run:
